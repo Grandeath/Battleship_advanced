@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/Grandeath/Battleship_advanced/application"
+)
 
 func main() {
-	fmt.Println("New project")
+	application.StartApp()
 }
