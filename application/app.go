@@ -11,16 +11,18 @@ import (
 )
 
 type GuiBoard struct {
-	ui          *gui.GUI
-	yourBoard   *gui.Board
-	enemyBoard  *gui.Board
-	config      *gui.BoardConfig
-	Description connection.Description
-	turnText    *gui.Text
-	versusText  *gui.Text
-	descText    *gui.Text
-	oppDescText *gui.Text
-	fireLogText *gui.Text
+	ui              *gui.GUI
+	yourBoard       *gui.Board
+	yourBoardState  [10][10]gui.State
+	enemyBoard      *gui.Board
+	enemyBoardState [10][10]gui.State
+	config          *gui.BoardConfig
+	Description     connection.Description
+	turnText        *gui.Text
+	versusText      *gui.Text
+	descText        *gui.Text
+	oppDescText     *gui.Text
+	fireLogText     *gui.Text
 }
 
 func NewGuiBoard(wantLogs bool) GuiBoard {
@@ -35,8 +37,8 @@ func (g *GuiBoard) CreateBoard(stateBoard connection.BoardRespons) error {
 	for i := range states {
 		states[i] = [10]gui.State{}
 	}
-
-	g.enemyBoard.SetStates(states)
+	g.enemyBoardState = states
+	g.enemyBoard.SetStates(g.enemyBoardState)
 
 	for _, ship := range stateBoard.Board {
 		column := int(ship[0]) - 65
@@ -47,10 +49,10 @@ func (g *GuiBoard) CreateBoard(stateBoard connection.BoardRespons) error {
 
 		states[column][row-1] = gui.Ship
 	}
-
+	g.yourBoardState = states
 	g.yourBoard = gui.NewBoard(1, 6, nil)
 	g.ui.Draw(g.yourBoard)
-	g.yourBoard.SetStates(states)
+	g.yourBoard.SetStates(g.yourBoardState)
 
 	return nil
 }
@@ -71,14 +73,17 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	return nil
 }
 
-func (g *GuiBoard) BoardListener(ctx context.Context, ch chan string) {
+func (g *GuiBoard) BoardListener(ctx context.Context, ch chan<- string, t <-chan struct{}) {
 	for {
+		<-t
 		char := g.enemyBoard.Listen(ctx)
+		if len(char) == 0 {
+			return
+		}
 		g.fireLogText.SetText(fmt.Sprintf("Coordinate: %s", char))
 		g.ui.Log("Coordinate: %s", char)
 		ch <- char
 	}
-
 }
 
 func (g *GuiBoard) StartBoard() {
@@ -86,4 +91,29 @@ func (g *GuiBoard) StartBoard() {
 	quitKey := tl.Key(tl.KeyCtrlF)
 	g.ui.Start(ctx, &quitKey)
 
+}
+
+func (g *GuiBoard) FireToBoard(coord string, resp connection.FireResponse) error {
+	column := int(coord[0]) - 65
+	row, err := strconv.Atoi(coord[1:])
+	if err != nil {
+		return err
+	}
+
+	switch resp.Result {
+	case "hit":
+		g.enemyBoardState[column][row-1] = gui.Hit
+	case "miss":
+		g.enemyBoardState[column][row-1] = gui.Miss
+	case "Sunk":
+		g.enemyBoardState[column][row-1] = gui.Hit
+	}
+
+	g.ui.Log("Shot at coordinates: %s did %s target", coord, resp.Result)
+	g.enemyBoard.SetStates(g.enemyBoardState)
+	return nil
+}
+
+func (g *GuiBoard) LogMessage(message string) {
+	g.ui.Log(message)
 }

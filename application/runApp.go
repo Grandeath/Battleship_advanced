@@ -2,7 +2,7 @@ package application
 
 import (
 	"context"
-
+	"errors"
 	"log"
 	"time"
 
@@ -52,30 +52,37 @@ func StartApp() {
 }
 
 func RunApp(ctx context.Context, board boardGUI, client connection.Client) {
-	// gameStillGoing := true
+	gameStillGoing := true
 	ch := make(chan string)
+	t := make(chan struct{})
 
-	go board.BoardListener(ctx, ch)
-	board.StartBoard()
-	// fmt.Println(<-ch)
+	go board.BoardListener(ctx, ch, t)
+	go board.StartBoard()
 
-	// for gameStillGoing {
-	// 	status, err := waitFunction(ctx, client)
-	// 	if errors.Is(err, fmt.Errorf("unexpected status code: 403")) {
-	// 		fmt.Println(status.LastGameStatus)
-	// 		gameStillGoing = false
-	// 	}
+	for gameStillGoing {
+		status, err := waitFunction(ctx, client)
+		if errors.Is(err, &connection.RequestError{StatusCode: 403, Err: "session not found"}) {
+			board.LogMessage(status.LastGameStatus)
+			gameStillGoing = false
+		} else if err != nil {
+			board.LogMessage(err.Error())
+		}
 
-	// 	if status.LastGameStatus == "ended" || status.LastGameStatus == "win" || status.LastGameStatus == "lose" || status.GameStatus == "false" {
-	// 		fmt.Println(status.LastGameStatus)
-	// 		gameStillGoing = false
-	// 	}
-	// 	log.Println("i'm here")
-	// 	fireCoord := <-ch
-	// 	fmt.Println(fireCoord)
-	// 	log.Println("i'm here")
-	// }
-	// log.Fatal(":(")
+		if status.LastGameStatus == "ended" || status.LastGameStatus == "win" || status.LastGameStatus == "lose" || status.GameStatus == "false" {
+			board.LogMessage(status.LastGameStatus)
+			gameStillGoing = false
+		}
+		time.Sleep(time.Millisecond * 500)
+		//Wait for channel ch to be ready to pass fire coordinates
+		t <- struct{}{}
+		fireCoord := <-ch
+
+		resp, err := client.Fire(ctx, fireCoord)
+		if err != nil {
+			board.LogMessage(err.Error())
+		}
+		board.FireToBoard(fireCoord, resp)
+	}
 
 }
 
@@ -85,7 +92,6 @@ func waitFunction(ctx context.Context, client connection.Client) (connection.Gam
 	for waitingForResponse {
 		status, err := client.GetStatus(ctx)
 		if err != nil {
-			log.Println(err)
 			return status, err
 		}
 		if status.ShouldFire {
