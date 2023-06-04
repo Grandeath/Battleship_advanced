@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
+
 	"github.com/Grandeath/Battleship_advanced/application"
 )
 
 func main() {
-	application.StartApp()
+	ctx := context.Background()
+	application.StartApp(ctx)
 }

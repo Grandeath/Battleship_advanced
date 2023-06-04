@@ -1,3 +1,4 @@
+// application implements logic of the game
 package application
 
 import (
@@ -10,25 +11,42 @@ import (
 	gui "github.com/grupawp/warships-gui/v2"
 )
 
+// GuiBoard contain variables needed to run the board
+// and implements function needed to manipulate GUI and make it interactive
+// ui - contain user interface
+// yourBoard is user board field
+// userBoardState - contain state of user's board
+// enemyBoard is enemy board field
+// enemyBoardState - contain state of enemy's board
+// config - contain configuration of the board
+// Description contain information about user's and enemy's nick and description
+// turnText is field indication whose turn is now
+// versusText is field which tell against whome user play
+// descText is user description field
+// oppDescText is opponent descritpion field
+// fireLogText is field which logs your shots
 type GuiBoard struct {
-	ui              *gui.GUI
-	yourBoard       *gui.Board
-	yourBoardState  [10][10]gui.State
-	enemyBoard      *gui.Board
-	enemyBoardState [10][10]gui.State
-	config          *gui.BoardConfig
-	Description     connection.Description
-	turnText        *gui.Text
-	versusText      *gui.Text
-	descText        *gui.Text
-	oppDescText     *gui.Text
-	fireLogText     *gui.Text
+	ui               *gui.GUI
+	yourBoard        *gui.Board
+	yourBoardState   [10][10]gui.State
+	enemyBoard       *gui.Board
+	enemyBoardState  [10][10]gui.State
+	config           *gui.BoardConfig
+	Description      connection.Description
+	turnText         *gui.Text
+	versusText       *gui.Text
+	descText         descriptionField
+	oppDescText      descriptionField
+	fireLogText      *gui.Text
+	enemyCurrentShot int
 }
 
+// NewGuiBoard create GuiBoard
 func NewGuiBoard(wantLogs bool) GuiBoard {
-	return GuiBoard{ui: gui.NewGUI(wantLogs), config: gui.NewBoardConfig()}
+	return GuiBoard{ui: gui.NewGUI(wantLogs), config: gui.NewBoardConfig(), enemyCurrentShot: 0}
 }
 
+// CreateBoard create board of the game
 func (g *GuiBoard) CreateBoard(stateBoard connection.BoardRespons) error {
 	g.enemyBoard = gui.NewBoard(50, 6, nil)
 	g.ui.Draw(g.enemyBoard)
@@ -57,22 +75,28 @@ func (g *GuiBoard) CreateBoard(stateBoard connection.BoardRespons) error {
 	return nil
 }
 
+// PrintDescription print text fields on the board
 func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.turnText = gui.NewText(1, 1, "Your turn", nil)
 	versus := fmt.Sprintf("%s vs %s", g.Description.Nick, g.Description.Opponent)
 	g.versusText = gui.NewText(1, 4, versus, nil)
-	g.descText = gui.NewText(1, 28, g.Description.Desc, nil)
-	g.oppDescText = gui.NewText(1, 32, g.Description.OppDesc, nil)
+	g.descText = NewDescriptionFieldYour(g.Description.Desc)
+	g.oppDescText = NewDescriptionFieldEnemy(g.Description.OppDesc)
 	g.fireLogText = gui.NewText(1, 35, "Press on any coordinate to log it.", nil)
 
 	g.ui.Draw(g.turnText)
 	g.ui.Draw(g.versusText)
-	g.ui.Draw(g.descText)
-	g.ui.Draw(g.oppDescText)
+	g.ui.Draw(g.descText.firstLine)
+	g.ui.Draw(g.descText.secondLine)
+	g.ui.Draw(g.descText.thirdLine)
+	g.ui.Draw(g.oppDescText.firstLine)
+	g.ui.Draw(g.oppDescText.secondLine)
+	g.ui.Draw(g.oppDescText.thirdLine)
 	g.ui.Draw(g.fireLogText)
 	return nil
 }
 
+// BoardListener listen to user click
 func (g *GuiBoard) BoardListener(ctx context.Context, ch chan<- string, t <-chan struct{}) {
 	for {
 		<-t
@@ -86,13 +110,16 @@ func (g *GuiBoard) BoardListener(ctx context.Context, ch chan<- string, t <-chan
 	}
 }
 
-func (g *GuiBoard) StartBoard() {
-	ctx := context.Background()
-	quitKey := tl.Key(tl.KeyCtrlF)
-	g.ui.Start(ctx, &quitKey)
+// StartBoard starting printing board
+func (g *GuiBoard) StartBoard(ctx context.Context, quit chan struct{}) {
 
+	quitKey := tl.Key(tl.KeyCtrlF)
+
+	g.ui.Start(ctx, &quitKey)
+	quit <- struct{}{}
 }
 
+// Upate enemy board with user shots with its result
 func (g *GuiBoard) FireToBoard(coord string, resp connection.FireResponse) error {
 	column := int(coord[0]) - 65
 	row, err := strconv.Atoi(coord[1:])
@@ -105,8 +132,11 @@ func (g *GuiBoard) FireToBoard(coord string, resp connection.FireResponse) error
 		g.enemyBoardState[column][row-1] = gui.Hit
 	case "miss":
 		g.enemyBoardState[column][row-1] = gui.Miss
-	case "Sunk":
+		g.SetTurnText("Enemy turn")
+	case "sunk":
+		g.ui.Log("Sunk th ship")
 		g.enemyBoardState[column][row-1] = gui.Hit
+		g.sunkShip(coord)
 	}
 
 	g.ui.Log("Shot at coordinates: %s did %s target", coord, resp.Result)
@@ -114,6 +144,57 @@ func (g *GuiBoard) FireToBoard(coord string, resp connection.FireResponse) error
 	return nil
 }
 
+// LogMessage log text
 func (g *GuiBoard) LogMessage(message string) {
 	g.ui.Log(message)
+}
+
+// UpdateYourBoard update user board with enemy shot with indication if enemy missed or hit a ship
+func (g *GuiBoard) UpdateYourBoard(coords []string) error {
+	if len(coords) <= g.enemyCurrentShot-1 {
+		return nil
+	}
+	for _, coord := range coords[g.enemyCurrentShot:] {
+
+		g.enemyCurrentShot++
+		column := int(coord[0]) - 65
+		row, err := strconv.Atoi(coord[1:])
+		if err != nil {
+			return err
+		}
+
+		switch g.yourBoardState[column][row-1] {
+		case gui.Ship:
+			g.yourBoardState[column][row-1] = gui.Hit
+			g.ui.Log("Enemy shot at coordinates: %s did hit target", coord)
+		case gui.Hit:
+			g.yourBoardState[column][row-1] = gui.Hit
+			g.ui.Log("Enemy shot at coordinates: %s did hit target", coord)
+		case gui.Empty:
+			g.yourBoardState[column][row-1] = gui.Miss
+			g.ui.Log("Enemy shot at coordinates: %s did miss target", coord)
+		default:
+			g.yourBoardState[column][row-1] = gui.Miss
+			g.ui.Log("Enemy shot at coordinates: %s did miss target", coord)
+		}
+		g.yourBoard.SetStates(g.yourBoardState)
+	}
+	return nil
+}
+
+// SetTurnText change text indicating which turn is now
+func (g *GuiBoard) SetTurnText(text string) {
+	g.turnText.SetText(text)
+}
+
+func (g *GuiBoard) sunkShip(coord string) error {
+	column := int(coord[0]) - 65
+	row, err := strconv.Atoi(coord[1:])
+	if err != nil {
+		return err
+	}
+	newNode := NewQuadTree(ShipCoord{row: row, column: column}, g.enemyBoardState, Center)
+	//check proximity
+	g.ui.Log("Destroyed %d mast ship", len(newNode.GetAllCoords()))
+	return nil
 }

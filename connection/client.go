@@ -5,6 +5,7 @@ import "context"
 
 // Client handle connection to Warships Online API
 type Client interface {
+	SetStartingHeader(setHeader StartingHeader)
 	StartGame(ctx context.Context) error
 	GetBoard(ctx context.Context) (BoardRespons, error)
 	GetDescription(ctx context.Context) (Description, error)

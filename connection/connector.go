@@ -24,6 +24,11 @@ func NewClient(host string) ConnectionClient {
 	return ConnectionClient{client: http.Client{}, host: host}
 }
 
+// SetStartingHeader set starting header
+func (c *ConnectionClient) SetStartingHeader(setHeader StartingHeader) {
+	c.StartingHeader = setHeader
+}
+
 // StartGame starting game with given params in starting header
 // which decide if you want to play against bot or player or wait for opponent,
 // if you want send your nick and description if specify them
