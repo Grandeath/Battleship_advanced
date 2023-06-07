@@ -134,12 +134,12 @@ func (g *GuiBoard) FireToBoard(coord string, resp connection.FireResponse) error
 		g.enemyBoardState[column][row-1] = gui.Miss
 		g.SetTurnText("Enemy turn")
 	case "sunk":
-		g.ui.Log("Sunk th ship")
+		g.ui.Log("Sunk the ship")
 		g.enemyBoardState[column][row-1] = gui.Hit
 		g.sunkShip(coord)
 	}
 
-	g.ui.Log("Shot at coordinates: %s did %s target", coord, resp.Result)
+	g.ui.Log("Shot at coordinates: %s did %s the target", coord, resp.Result)
 	g.enemyBoard.SetStates(g.enemyBoardState)
 	return nil
 }
@@ -193,8 +193,153 @@ func (g *GuiBoard) sunkShip(coord string) error {
 	if err != nil {
 		return err
 	}
-	newNode := NewQuadTree(ShipCoord{row: row, column: column}, g.enemyBoardState, Center)
+	newNode := NewQuadTree(ShipCoord{row: row - 1, column: column}, g.enemyBoardState, Center)
 	//check proximity
 	g.ui.Log("Destroyed %d mast ship", len(newNode.GetAllCoords()))
+	g.HighlighEmptyTiles(row, column)
 	return nil
+}
+
+func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
+	stillCircling := true
+	heading := North
+	column := gotColumn - 1
+	row := gotRow - 1
+
+	for {
+		if g.enemyBoardState[column][row] == gui.Hit {
+			column--
+		} else {
+			break
+		}
+	}
+
+	for stillCircling {
+		if heading == North {
+			if row < 10 && row >= 0 {
+				if g.enemyBoardState[column+1][row] == gui.Hit {
+					if column >= 0 {
+						g.enemyBoardState[column][row] = gui.Miss
+					}
+					if column >= 0 && row-1 >= 0 {
+						if g.enemyBoardState[column][row-1] == gui.Hit {
+							heading = West
+							column--
+						} else {
+							row--
+						}
+					} else {
+						row--
+					}
+				} else if g.enemyBoardState[column+1][row] != gui.Hit {
+					if column >= 0 && column < 10 && row >= 0 && row < 10 {
+						g.enemyBoardState[column][row] = gui.Miss
+					}
+					heading = East
+					column++
+				}
+			} else {
+				heading = East
+				column++
+			}
+		}
+		if row == gotRow-1 && column == gotColumn-1 {
+			stillCircling = false
+		}
+
+		if heading == East {
+			if column < 10 && column >= 0 {
+				if g.enemyBoardState[column][row+1] == gui.Hit {
+					if row >= 0 {
+						g.enemyBoardState[column][row] = gui.Miss
+					}
+					if row >= 0 && column+1 < 10 {
+						if g.enemyBoardState[column+1][row] == gui.Hit {
+							heading = North
+							row--
+						} else {
+							column++
+						}
+					} else {
+						column++
+					}
+				} else if g.enemyBoardState[column][row+1] != gui.Hit {
+					if column >= 0 && column < 10 && row >= 0 && row < 10 {
+						g.enemyBoardState[column][row] = gui.Miss
+					}
+					heading = South
+					row++
+				}
+			} else {
+				heading = South
+				row++
+			}
+		}
+		if row == gotRow-1 && column == gotColumn-1 {
+			stillCircling = false
+		}
+		if heading == South {
+			if row < 10 && row >= 0 {
+				if g.enemyBoardState[column-1][row] == gui.Hit {
+					if column < 10 {
+						g.enemyBoardState[column][row] = gui.Miss
+					}
+					if column < 10 && row+1 < 10 {
+						if g.enemyBoardState[column][row+1] == gui.Hit {
+							heading = East
+							column++
+						} else {
+							row++
+						}
+					} else {
+						row++
+					}
+				} else if g.enemyBoardState[column-1][row] != gui.Hit {
+					if column >= 0 && column < 10 && row >= 0 && row < 10 {
+						g.enemyBoardState[column][row] = gui.Miss
+					}
+					heading = West
+					column--
+				}
+			} else {
+				heading = West
+				column--
+			}
+		}
+		if row == gotRow-1 && column == gotColumn-1 {
+			stillCircling = false
+		}
+		if heading == West {
+			if column < 10 && column >= 0 {
+				if g.enemyBoardState[column][row-1] == gui.Hit {
+					if row < 10 {
+						g.enemyBoardState[column][row] = gui.Miss
+					}
+					if row < 10 && column-1 >= 0 {
+						if g.enemyBoardState[column-1][row] == gui.Hit {
+							heading = South
+							row++
+						} else {
+							column--
+						}
+					} else {
+						column--
+					}
+				} else if g.enemyBoardState[column][row-1] != gui.Hit {
+					if column >= 0 && column < 10 && row >= 0 && row < 10 {
+						g.enemyBoardState[column][row] = gui.Miss
+					}
+					heading = North
+					row--
+				}
+			} else {
+				heading = North
+				row--
+			}
+		}
+		if row == gotRow-1 && column == gotColumn-1 {
+			stillCircling = false
+		}
+	}
+
 }

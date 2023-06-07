@@ -1,8 +1,6 @@
 package application
 
 import (
-	"log"
-
 	gui "github.com/grupawp/warships-gui/v2"
 )
 
@@ -31,64 +29,34 @@ type QuadTree struct {
 
 func NewQuadTree(coord ShipCoord, enemyBoardState [10][10]gui.State, current currentNode) *QuadTree {
 	newNode := &QuadTree{Coord: coord}
-	newNode.FindNode(enemyBoardState, current)
+	newNode.FindNode(&enemyBoardState, current)
 	return newNode
 }
 
-func (q *QuadTree) FindNode(enemyBoardState [10][10]gui.State, current currentNode) {
-	log.Println("beep")
+func (q *QuadTree) FindNode(enemyBoardState *[10][10]gui.State, current currentNode) {
 
 	if q.Coord.row+1 < 10 && current != South {
 		if enemyBoardState[q.Coord.column][q.Coord.row+1] == gui.Hit {
-			q.NorthChild = NewQuadTree(ShipCoord{column: q.Coord.column, row: q.Coord.row + 1}, enemyBoardState, North)
-		} else {
 			enemyBoardState[q.Coord.column][q.Coord.row+1] = gui.Empty
-			if q.Coord.column+1 < 10 {
-				enemyBoardState[q.Coord.column+1][q.Coord.row+1] = gui.Empty
-			}
-			if q.Coord.column-1 >= 0 {
-				enemyBoardState[q.Coord.column-1][q.Coord.row+1] = gui.Empty
-			}
+			q.NorthChild = NewQuadTree(ShipCoord{column: q.Coord.column, row: q.Coord.row + 1}, *enemyBoardState, North)
 		}
 	}
 	if q.Coord.row-1 >= 0 && current != North {
 		if enemyBoardState[q.Coord.column][q.Coord.row-1] == gui.Hit {
-			q.SouthChild = NewQuadTree(ShipCoord{column: q.Coord.column, row: q.Coord.row - 1}, enemyBoardState, South)
-		} else {
 			enemyBoardState[q.Coord.column][q.Coord.row-1] = gui.Empty
-			if q.Coord.column+1 < 10 {
-				enemyBoardState[q.Coord.column+1][q.Coord.row-1] = gui.Empty
-			}
-			if q.Coord.column-1 >= 0 {
-				enemyBoardState[q.Coord.column-1][q.Coord.row-1] = gui.Empty
-			}
+			q.SouthChild = NewQuadTree(ShipCoord{column: q.Coord.column, row: q.Coord.row - 1}, *enemyBoardState, South)
 		}
 	}
 	if q.Coord.column+1 < 10 && current != West {
 		if enemyBoardState[q.Coord.column+1][q.Coord.row] == gui.Hit {
-			q.EastChild = NewQuadTree(ShipCoord{column: q.Coord.column + 1, row: q.Coord.row}, enemyBoardState, East)
-		} else {
 			enemyBoardState[q.Coord.column+1][q.Coord.row] = gui.Empty
-			if q.Coord.row+1 < 10 {
-				enemyBoardState[q.Coord.column+1][q.Coord.row+1] = gui.Empty
-			}
-			if q.Coord.row-1 >= 0 {
-				enemyBoardState[q.Coord.column+1][q.Coord.row-1] = gui.Empty
-			}
-
+			q.EastChild = NewQuadTree(ShipCoord{column: q.Coord.column + 1, row: q.Coord.row}, *enemyBoardState, East)
 		}
 	}
 	if q.Coord.column-1 >= 0 && current != East {
 		if enemyBoardState[q.Coord.column-1][q.Coord.row] == gui.Hit {
-			q.WestChild = NewQuadTree(ShipCoord{column: q.Coord.column - 1, row: q.Coord.row}, enemyBoardState, West)
-		} else {
 			enemyBoardState[q.Coord.column-1][q.Coord.row] = gui.Empty
-			if q.Coord.row+1 < 10 {
-				enemyBoardState[q.Coord.column-1][q.Coord.row+1] = gui.Empty
-			}
-			if q.Coord.row-1 >= 0 {
-				enemyBoardState[q.Coord.column-1][q.Coord.row-1] = gui.Empty
-			}
+			q.WestChild = NewQuadTree(ShipCoord{column: q.Coord.column - 1, row: q.Coord.row}, *enemyBoardState, West)
 		}
 	}
 

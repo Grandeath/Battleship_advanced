@@ -4,6 +4,7 @@ package application
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -89,9 +90,13 @@ mainloop:
 		if err != nil {
 			switch err.(type) {
 			case *connection.RequestError:
-				board.LogMessage(err.Error())
-				board.LogMessage(status.LastGameStatus)
-				break mainloop
+				if errors.Is(err, &connection.RequestError{StatusCode: 403, Err: "session not found"}) {
+					board.LogMessage(err.Error())
+					board.LogMessage(status.LastGameStatus)
+					break mainloop
+				} else {
+					board.LogMessage(err.Error())
+				}
 			default:
 				board.LogMessage(err.Error())
 			}
@@ -187,7 +192,7 @@ func askStartingConditions(ctx context.Context, client connection.Client) {
 				fmt.Println("Nick too short")
 				continue
 			} else {
-				newStartingHeader.Desc = yourNick
+				newStartingHeader.Nick = yourNick
 				break
 			}
 		}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -26,6 +27,7 @@ func NewClient(host string) ConnectionClient {
 
 // SetStartingHeader set starting header
 func (c *ConnectionClient) SetStartingHeader(setHeader StartingHeader) {
+	log.Println(setHeader)
 	c.StartingHeader = setHeader
 }
 
