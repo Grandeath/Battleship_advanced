@@ -26,19 +26,21 @@ import (
 // oppDescText is opponent descritpion field
 // fireLogText is field which logs your shots
 type GuiBoard struct {
-	ui               *gui.GUI
-	yourBoard        *gui.Board
-	yourBoardState   [10][10]gui.State
-	enemyBoard       *gui.Board
-	enemyBoardState  [10][10]gui.State
-	config           *gui.BoardConfig
-	Description      connection.Description
-	turnText         *gui.Text
-	versusText       *gui.Text
-	descText         descriptionField
-	oppDescText      descriptionField
-	fireLogText      *gui.Text
-	enemyCurrentShot int
+	ui                 *gui.GUI
+	yourBoard          *gui.Board
+	yourBoardState     [10][10]gui.State
+	enemyBoard         *gui.Board
+	enemyBoardState    [10][10]gui.State
+	config             *gui.BoardConfig
+	Description        connection.Description
+	turnText           *gui.Text
+	versusText         *gui.Text
+	descText           descriptionField
+	oppDescText        descriptionField
+	fireLogText        *gui.Text
+	legendField        LegendField
+	shipLeftCountField ShipLeftCountField
+	enemyCurrentShot   int
 }
 
 // NewGuiBoard create GuiBoard
@@ -84,6 +86,10 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.oppDescText = NewDescriptionFieldEnemy(g.Description.OppDesc)
 	g.fireLogText = gui.NewText(1, 35, "Press on any coordinate to log it.", nil)
 
+	g.legendField = NewLegendField()
+
+	g.shipLeftCountField = NewShipLeftCountField()
+
 	g.ui.Draw(g.turnText)
 	g.ui.Draw(g.versusText)
 	g.ui.Draw(g.descText.firstLine)
@@ -93,6 +99,13 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.ui.Draw(g.oppDescText.secondLine)
 	g.ui.Draw(g.oppDescText.thirdLine)
 	g.ui.Draw(g.fireLogText)
+	g.ui.Draw(g.legendField.hitLegend)
+	g.ui.Draw(g.legendField.missLegend)
+	g.ui.Draw(g.legendField.shipLegend)
+	g.ui.Draw(g.shipLeftCountField.FourMastField)
+	g.ui.Draw(g.shipLeftCountField.ThreeMastField)
+	g.ui.Draw(g.shipLeftCountField.TwoMastField)
+	g.ui.Draw(g.shipLeftCountField.OneMastField)
 	return nil
 }
 
@@ -194,10 +207,28 @@ func (g *GuiBoard) sunkShip(coord string) error {
 		return err
 	}
 	newNode := NewQuadTree(ShipCoord{row: row - 1, column: column}, g.enemyBoardState, Center)
+	g.UpdateShipCountField(len(newNode.GetAllCoords()))
 	//check proximity
 	g.ui.Log("Destroyed %d mast ship", len(newNode.GetAllCoords()))
 	g.HighlighEmptyTiles(row, column)
 	return nil
+}
+
+func (g *GuiBoard) UpdateShipCountField(shipMastCount int) {
+	switch shipMastCount {
+	case 4:
+		g.shipLeftCountField.FourMastCount = g.shipLeftCountField.FourMastCount - 1
+		g.shipLeftCountField.UpdateFourMastCount()
+	case 3:
+		g.shipLeftCountField.ThreeMastCount = g.shipLeftCountField.ThreeMastCount - 1
+		g.shipLeftCountField.UpdateThreeMastCount()
+	case 2:
+		g.shipLeftCountField.TwoMastCount = g.shipLeftCountField.TwoMastCount - 1
+		g.shipLeftCountField.UpdateTwoMastCount()
+	case 1:
+		g.shipLeftCountField.OneMastCount = g.shipLeftCountField.OneMastCount - 1
+		g.shipLeftCountField.UpdateOneMastCount()
+	}
 }
 
 func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
@@ -207,12 +238,18 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 	row := gotRow - 1
 
 	for {
+		if column < 0 {
+			break
+		}
 		if g.enemyBoardState[column][row] == gui.Hit {
 			column--
 		} else {
 			break
 		}
 	}
+
+	stopColumn := column
+	stopRow := row
 
 	for stillCircling {
 		if heading == North {
@@ -243,7 +280,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 				column++
 			}
 		}
-		if row == gotRow-1 && column == gotColumn-1 {
+		if row == stopRow && column == stopColumn {
 			stillCircling = false
 		}
 
@@ -275,7 +312,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 				row++
 			}
 		}
-		if row == gotRow-1 && column == gotColumn-1 {
+		if row == stopRow && column == stopColumn {
 			stillCircling = false
 		}
 		if heading == South {
@@ -306,7 +343,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 				column--
 			}
 		}
-		if row == gotRow-1 && column == gotColumn-1 {
+		if row == stopRow && column == stopColumn {
 			stillCircling = false
 		}
 		if heading == West {
@@ -337,7 +374,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 				row--
 			}
 		}
-		if row == gotRow-1 && column == gotColumn-1 {
+		if row == stopRow && column == stopColumn {
 			stillCircling = false
 		}
 	}
