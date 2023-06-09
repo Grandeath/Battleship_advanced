@@ -302,7 +302,7 @@ func (c ConnectionClient) GetPlayerList(ctx context.Context) (PlayerList, error)
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
 	defer cancel()
 
-	connectionString, err := url.JoinPath(c.host, "/api/game/list")
+	connectionString, err := url.JoinPath(c.host, "/api/lobby")
 	if err != nil {
 		return PlayerList{}, err
 	}
@@ -340,4 +340,136 @@ func (c ConnectionClient) GetPlayerList(ctx context.Context) (PlayerList, error)
 		return PlayerList{}, err
 	}
 	return playerList, nil
+}
+
+func (c ConnectionClient) DeleteGame(ctx context.Context) error {
+	// Create a new context with a timeout of 5 seconds
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
+	defer cancel()
+
+	connectionString, err := url.JoinPath(c.host, "/api/game/abandon")
+	if err != nil {
+		return err
+	}
+
+	// Create a new GET request with the connection string
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, connectionString, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("cannot create request: %w", nil)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Auth-Token", c.token)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	// Check the response status code
+	if resp.StatusCode == 403 {
+		errorBody := ErrorMessage{}
+		err = json.NewDecoder(resp.Body).Decode(&errorBody)
+		if err != nil {
+			return err
+		}
+		return &RequestError{StatusCode: resp.StatusCode, Err: errorBody.Message}
+	}
+	if resp.StatusCode != http.StatusOK {
+		statusText := http.StatusText(resp.StatusCode)
+		return &RequestError{StatusCode: resp.StatusCode, Err: statusText}
+	}
+	return nil
+}
+
+func (c ConnectionClient) getLadderBoard(ctx context.Context) (StatsLeaderboard, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
+	defer cancel()
+
+	connectionString, err := url.JoinPath(c.host, "/api/stats")
+	if err != nil {
+		return StatsLeaderboard{}, err
+	}
+
+	// Create a new GET request with the connection string
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, connectionString, http.NoBody)
+	if err != nil {
+		return StatsLeaderboard{}, fmt.Errorf("cannot create request: %w", nil)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return StatsLeaderboard{}, err
+	}
+
+	defer resp.Body.Close()
+
+	// Check the response status code
+	if resp.StatusCode == 403 {
+		errorBody := ErrorMessage{}
+		err = json.NewDecoder(resp.Body).Decode(&errorBody)
+		if err != nil {
+			return StatsLeaderboard{}, &RequestError{StatusCode: resp.StatusCode, Err: ""}
+		}
+		return StatsLeaderboard{}, &RequestError{StatusCode: resp.StatusCode, Err: errorBody.Message}
+	}
+	if resp.StatusCode != http.StatusOK {
+		statusText := http.StatusText(resp.StatusCode)
+		return StatsLeaderboard{}, &RequestError{StatusCode: resp.StatusCode, Err: statusText}
+	}
+
+	statsList := StatsLeaderboard{}
+	err = json.NewDecoder(resp.Body).Decode(&statsList)
+	if err != nil {
+		return StatsLeaderboard{}, err
+	}
+	return StatsLeaderboard{}, nil
+
+}
+
+func (c ConnectionClient) getPlayerScore(ctx context.Context, player string) (StatsPlayer, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
+	defer cancel()
+	path := "/api/stats/" + player
+	connectionString, err := url.JoinPath(c.host, path)
+	if err != nil {
+		return StatsPlayer{}, err
+	}
+
+	// Create a new GET request with the connection string
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, connectionString, http.NoBody)
+	if err != nil {
+		return StatsPlayer{}, fmt.Errorf("cannot create request: %w", nil)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return StatsPlayer{}, err
+	}
+
+	defer resp.Body.Close()
+
+	// Check the response status code
+	if resp.StatusCode == 403 {
+		errorBody := ErrorMessage{}
+		err = json.NewDecoder(resp.Body).Decode(&errorBody)
+		if err != nil {
+			return StatsPlayer{}, &RequestError{StatusCode: resp.StatusCode, Err: ""}
+		}
+		return StatsPlayer{}, &RequestError{StatusCode: resp.StatusCode, Err: errorBody.Message}
+	}
+	if resp.StatusCode != http.StatusOK {
+		statusText := http.StatusText(resp.StatusCode)
+		return StatsPlayer{}, &RequestError{StatusCode: resp.StatusCode, Err: statusText}
+	}
+
+	statsList := StatsPlayer{}
+	err = json.NewDecoder(resp.Body).Decode(&statsList)
+	if err != nil {
+		return StatsPlayer{}, err
+	}
+	return statsList, nil
+
 }
