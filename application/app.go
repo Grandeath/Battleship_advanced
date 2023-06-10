@@ -80,7 +80,7 @@ func (g *GuiBoard) CreateBoard(stateBoard connection.BoardRespons) error {
 
 // PrintDescription print text fields on the board
 func (g *GuiBoard) PrintDescription(ctx context.Context) error {
-	g.turnText = gui.NewText(1, 1, "Your turn", nil)
+	g.turnText = gui.NewText(1, 1, "Enemy turn", nil)
 	versus := fmt.Sprintf("%s vs %s", g.Description.Nick, g.Description.Opponent)
 	g.versusText = gui.NewText(1, 4, versus, nil)
 	g.descText = NewDescriptionFieldYour(g.Description.Desc)

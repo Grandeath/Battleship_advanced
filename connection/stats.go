@@ -4,7 +4,7 @@ type StatsLeaderboard struct {
 	GotStats []Stats `json:"stats"`
 }
 
-type StatsPlayer []struct {
+type StatsPlayer struct {
 	GotStat Stats `json:"stats"`
 }
 

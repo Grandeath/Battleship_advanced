@@ -62,7 +62,7 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 			}
 		case 2:
 		case 3:
-			err := ShowLeaderBoard(ctx, client, scanner)
+			err := ShowLeaderBoard(ctx, client, scanner, startingHeader)
 			if err != nil {
 				log.Println(err)
 			}
@@ -74,7 +74,7 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 			err := choosePlayer(ctx, client, scanner, &startingHeader)
 			if err != nil {
 				log.Println(err)
-			} else if len(startingHeader.Nick) > 0 {
+			} else if len(startingHeader.TargetNick) > 0 {
 				startingHeader.Wpbot = false
 				client.SetStartingHeader(startingHeader)
 				return StartGame
@@ -181,10 +181,19 @@ func waitForChallenge(startingHeader *connection.StartingHeader) {
 	startingHeader.TargetNick = ""
 }
 
-func ShowLeaderBoard(ctx context.Context, client connection.Client, scanner *bufio.Scanner) error {
+func ShowLeaderBoard(ctx context.Context, client connection.Client, scanner *bufio.Scanner, startingHeader connection.StartingHeader) error {
 	statsList, err := client.GetLeaderBoard(ctx)
 	if err != nil {
 		return err
+	}
+
+	var playerStats connection.StatsPlayer
+
+	if len(startingHeader.Nick) != 0 {
+		playerStats, err = client.GetPlayerScore(ctx, startingHeader.Nick)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, stat := range statsList.GotStats {
@@ -193,6 +202,16 @@ func ShowLeaderBoard(ctx context.Context, client connection.Client, scanner *buf
 		fmt.Printf("Games : %d\n", stat.Games)
 		fmt.Printf("Points : %d\n", stat.Points)
 		fmt.Printf("Wins : %d\n", stat.Wins)
+		fmt.Println()
+	}
+
+	if playerStats.GotStat.Rank > 10 {
+		fmt.Println(playerStats.GotStat.Rank)
+		fmt.Printf("Nick : %s\n", playerStats.GotStat.Nick)
+		fmt.Printf("Games : %d\n", playerStats.GotStat.Games)
+		fmt.Printf("Points : %d\n", playerStats.GotStat.Points)
+		fmt.Printf("Wins : %d\n", playerStats.GotStat.Wins)
+		fmt.Println()
 	}
 
 	fmt.Println("Press anything to return to menu")
