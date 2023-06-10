@@ -17,4 +17,6 @@ type boardGUI interface {
 	LogMessage(message string)
 	UpdateYourBoard(coords []string) error
 	SetTurnText(text string)
+	StartTimer(ctx context.Context)
+	UpdateTImer(time int)
 }

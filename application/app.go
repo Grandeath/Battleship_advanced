@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Grandeath/Battleship_advanced/application/timer"
 	"github.com/Grandeath/Battleship_advanced/connection"
 	tl "github.com/grupawp/termloop"
 	gui "github.com/grupawp/warships-gui/v2"
@@ -41,6 +42,7 @@ type GuiBoard struct {
 	legendField        LegendField
 	shipLeftCountField ShipLeftCountField
 	accuracyField      Accuracy
+	timerField         timer.Timer
 	enemyCurrentShot   int
 }
 
@@ -87,6 +89,7 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.oppDescText = NewDescriptionFieldEnemy(g.Description.OppDesc)
 	g.fireLogText = gui.NewText(1, 35, "Press on any coordinate to log it.", nil)
 	g.accuracyField = NewAccuracyField()
+	g.timerField = timer.NewTimer()
 
 	g.legendField = NewLegendField()
 
@@ -109,6 +112,7 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.ui.Draw(g.shipLeftCountField.TwoMastField)
 	g.ui.Draw(g.shipLeftCountField.OneMastField)
 	g.ui.Draw(g.accuracyField.accuracyField)
+	g.ui.Draw(g.timerField.ClockField)
 	return nil
 }
 
@@ -151,6 +155,7 @@ func (g *GuiBoard) FireToBoard(coord string, resp connection.FireResponse) error
 	case "miss":
 		g.enemyBoardState[column][row-1] = gui.Miss
 		g.SetTurnText("Enemy turn")
+		g.timerField.TimeStop()
 	case "sunk":
 		g.ui.Log("Sunk the ship")
 		g.enemyBoardState[column][row-1] = gui.Hit
@@ -236,6 +241,15 @@ func (g *GuiBoard) UpdateShipCountField(shipMastCount int) {
 		g.shipLeftCountField.OneMastCount = g.shipLeftCountField.OneMastCount - 1
 		g.shipLeftCountField.UpdateOneMastCount()
 	}
+}
+
+func (g *GuiBoard) StartTimer(ctx context.Context) {
+	g.timerField.StartClock(ctx)
+}
+
+func (g *GuiBoard) UpdateTImer(time int) {
+	g.timerField.TimeGoes = true
+	g.timerField.Time = time
 }
 
 func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {

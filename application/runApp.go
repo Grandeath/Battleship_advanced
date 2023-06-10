@@ -71,6 +71,8 @@ func RunApp(ctx context.Context, board boardGUI, client connection.Client) {
 	// Start StartBoard in goroutine to make a board updatable
 	go board.StartBoard(ctx, quit)
 
+	board.StartTimer(ctx)
+
 	var fireCoord string
 
 mainloop:
@@ -78,6 +80,7 @@ mainloop:
 		// Wait for user turn
 		status, err := waitFunction(ctx, client)
 		board.SetTurnText("Your turn")
+		board.UpdateTImer(status.Timer)
 		// Check if sessions was not found. This case happen when user lost becasue of inacrtivity
 		if err != nil {
 			switch err.(type) {
@@ -198,111 +201,3 @@ func waitForChallenge(ctx context.Context, client connection.Client) {
 		counter++
 	}
 }
-
-// askStartingConditions ask user if he want to specify nick, description,
-// if want to play against user or WPbot and which player play against or wait if unavaibable.
-// func askStartingConditions(ctx context.Context, client connection.Client) {
-// 	// starts command scaner which gets answer for questions
-// 	scanner := bufio.NewScanner(os.Stdin)
-// 	var newStartingHeader connection.StartingHeader
-// 	var question string
-// 	fmt.Println("Do you want to specify nick? (yes/no)")
-// 	if scanner.Scan() {
-// 		question = scanner.Text()
-// 	} else {
-// 		log.Println(scanner.Err())
-// 	}
-// 	var yourDescription string
-// 	var yourNick string
-
-// 	if question == "yes" {
-// 		fmt.Println("Write your Nick")
-// 		for {
-// 			if scanner.Scan() {
-// 				yourNick = scanner.Text()
-// 			} else {
-// 				log.Panicln(scanner.Err())
-// 			}
-// 			if len(yourNick) > 20 {
-// 				fmt.Println("Nick too long")
-// 				continue
-// 			} else if len(yourNick) == 0 {
-// 				fmt.Println("Nick too short")
-// 				continue
-// 			} else {
-// 				newStartingHeader.Nick = yourNick
-// 				break
-// 			}
-// 		}
-
-// 		for {
-// 			fmt.Println("Write your Desc")
-
-// 			if scanner.Scan() {
-// 				yourDescription = scanner.Text()
-// 			} else {
-// 				log.Panicln(scanner.Err())
-// 			}
-// 			if len(yourDescription) > 120 {
-// 				fmt.Println("Description too long")
-// 				continue
-// 			} else if len(yourNick) == 0 {
-// 				fmt.Println("Description too short")
-// 				continue
-// 			} else {
-// 				newStartingHeader.Desc = yourDescription
-// 				break
-// 			}
-// 		}
-
-// 	}
-
-// 	var secondQuestion string
-// 	fmt.Println("Do you want to play against bot (yes/no)")
-// 	if scanner.Scan() {
-// 		secondQuestion = scanner.Text()
-// 	} else {
-// 		log.Println(scanner.Err())
-// 	}
-// 	if secondQuestion == "yes" {
-// 		newStartingHeader.Wpbot = true
-// 	} else {
-// 		newStartingHeader.Wpbot = false
-// 		newStartingHeader.TargetNick = choosePlayer(ctx, client)
-// 	}
-// 	client.SetStartingHeader(newStartingHeader)
-// }
-
-// // choosePlayer get waiting opponents from the server and let user decide
-// // whom attack or wait.
-// func choosePlayer(ctx context.Context, client connection.Client) string {
-// 	playerList, err := client.GetPlayerList(ctx)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	if len(playerList) == 0 {
-// 		fmt.Println("No enemies to challenge waiting for the oponent")
-// 		return ""
-// 	}
-// 	for index, player := range playerList {
-// 		fmt.Printf("%d %s - %s \n", index, player.Nick, player.GameStatus)
-// 	}
-// 	fmt.Println("Choose a player number(-1 to wait for opponent)")
-// 	var chosenPlayer string
-// 	_, err = fmt.Scanln(&chosenPlayer)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	numPlayer, err := strconv.Atoi(chosenPlayer)
-// 	if numPlayer == -1 {
-// 		return ""
-// 	}
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	if numPlayer >= len(playerList) || numPlayer < 0 {
-// 		log.Fatal("num outside the list")
-// 	}
-
-// 	return playerList[numPlayer].Nick
-// }

@@ -19,4 +19,5 @@ type GameStatus struct {
 	ShouldFire     bool     `json:"should_fire"`
 	OppShots       []string `json:"opp_shots"`
 	LastGameStatus string   `json:"last_game_status"`
+	Timer          int      `json:"timer"`
 }
