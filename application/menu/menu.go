@@ -8,13 +8,22 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/Grandeath/Battleship_advanced/connection"
 )
 
-func MainMenu(ctx context.Context, client connection.Client) {
+type UserIntent uint8
+
+const (
+	WaitForChallenge UserIntent = iota
+	ExitTheGame
+	StartGame
+)
+
+func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 	var startingHeader connection.StartingHeader
-mainloop:
+
 	for {
 		fmt.Println("1. Choose a nick")
 		fmt.Println("2. Position ship by yourself")
@@ -27,18 +36,19 @@ mainloop:
 		fmt.Println("Chose a number")
 
 		var question string
-		if scanner.Scan() {
-			question = scanner.Text()
-		} else {
-			log.Println(scanner.Err())
-		}
 		var chosenMenu int
+
 		for {
+			if scanner.Scan() {
+				question = scanner.Text()
+			} else {
+				log.Println(scanner.Err())
+			}
 			var err error
 			chosenMenu, err = strconv.Atoi(question)
 			if err != nil {
 				log.Println(err)
-			} else if chosenMenu < 0 || chosenMenu > 6 {
+			} else if chosenMenu < 0 || chosenMenu > 7 {
 				log.Println("Wrong number")
 			} else {
 				break
@@ -52,26 +62,32 @@ mainloop:
 			}
 		case 2:
 		case 3:
+			err := ShowLeaderBoard(ctx, client, scanner)
+			if err != nil {
+				log.Println(err)
+			}
 		case 4:
 			playAgainstBot(&startingHeader)
-			break mainloop
+			client.SetStartingHeader(startingHeader)
+			return StartGame
 		case 5:
 			err := choosePlayer(ctx, client, scanner, &startingHeader)
 			if err != nil {
 				log.Println(err)
 			} else if len(startingHeader.Nick) > 0 {
 				startingHeader.Wpbot = false
-				break mainloop
+				client.SetStartingHeader(startingHeader)
+				return StartGame
 			}
 		case 6:
 			waitForChallenge(&startingHeader)
-			break mainloop
+			client.SetStartingHeader(startingHeader)
+			return WaitForChallenge
 		case 7:
-			break mainloop
+			return ExitTheGame
 		}
 		CallClear()
 	}
-	client.SetStartingHeader(startingHeader)
 }
 
 func choseNick(scanner *bufio.Scanner, startingHeader *connection.StartingHeader) error {
@@ -126,7 +142,8 @@ func choosePlayer(ctx context.Context, client connection.Client, scanner *bufio.
 		return err
 	}
 	if len(playerList) == 0 {
-		fmt.Println("No enemies to challenge")
+		fmt.Println("No enemies to challenge returning to menu")
+		time.Sleep(time.Millisecond * 1000)
 		return nil
 	}
 	for index, player := range playerList {
@@ -162,4 +179,28 @@ func playAgainstBot(startingHeader *connection.StartingHeader) {
 func waitForChallenge(startingHeader *connection.StartingHeader) {
 	startingHeader.Wpbot = false
 	startingHeader.TargetNick = ""
+}
+
+func ShowLeaderBoard(ctx context.Context, client connection.Client, scanner *bufio.Scanner) error {
+	statsList, err := client.GetLeaderBoard(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, stat := range statsList.GotStats {
+		fmt.Println(stat.Rank)
+		fmt.Printf("Nick : %s\n", stat.Nick)
+		fmt.Printf("Games : %d\n", stat.Games)
+		fmt.Printf("Points : %d\n", stat.Points)
+		fmt.Printf("Wins : %d\n", stat.Wins)
+	}
+
+	fmt.Println("Press anything to return to menu")
+	if scanner.Scan() {
+		scanner.Text()
+	} else {
+		return scanner.Err()
+	}
+
+	return nil
 }

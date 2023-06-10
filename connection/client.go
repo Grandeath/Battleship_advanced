@@ -12,4 +12,8 @@ type Client interface {
 	Fire(ctx context.Context, coordinates string) (FireResponse, error)
 	GetStatus(ctx context.Context) (GameStatus, error)
 	GetPlayerList(ctx context.Context) (PlayerList, error)
+	DeleteGame(ctx context.Context) error
+	GetLeaderBoard(ctx context.Context) (StatsLeaderboard, error)
+	GetPlayerScore(ctx context.Context, player string) (StatsPlayer, error)
+	RefreshWaitingForGame(ctx context.Context) error
 }

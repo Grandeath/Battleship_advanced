@@ -384,7 +384,7 @@ func (c ConnectionClient) DeleteGame(ctx context.Context) error {
 	return nil
 }
 
-func (c ConnectionClient) getLadderBoard(ctx context.Context) (StatsLeaderboard, error) {
+func (c ConnectionClient) GetLeaderBoard(ctx context.Context) (StatsLeaderboard, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
 	defer cancel()
 
@@ -425,11 +425,11 @@ func (c ConnectionClient) getLadderBoard(ctx context.Context) (StatsLeaderboard,
 	if err != nil {
 		return StatsLeaderboard{}, err
 	}
-	return StatsLeaderboard{}, nil
+	return statsList, nil
 
 }
 
-func (c ConnectionClient) getPlayerScore(ctx context.Context, player string) (StatsPlayer, error) {
+func (c ConnectionClient) GetPlayerScore(ctx context.Context, player string) (StatsPlayer, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
 	defer cancel()
 	path := "/api/stats/" + player
@@ -472,4 +472,46 @@ func (c ConnectionClient) getPlayerScore(ctx context.Context, player string) (St
 	}
 	return statsList, nil
 
+}
+
+func (c ConnectionClient) RefreshWaitingForGame(ctx context.Context) error {
+	// Create a new context with a timeout of 5 seconds
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
+	defer cancel()
+
+	connectionString, err := url.JoinPath(c.host, "/api/game/refresh")
+	if err != nil {
+		return fmt.Errorf("cannot create request: %w", nil)
+	}
+
+	// Create a new GET request with the connection string
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, connectionString, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("cannot create request: %w", nil)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Auth-Token", c.token)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	// Check the response status code
+	if resp.StatusCode == 403 {
+		errorBody := ErrorMessage{}
+		err = json.NewDecoder(resp.Body).Decode(&errorBody)
+		if err != nil {
+			return &RequestError{StatusCode: resp.StatusCode, Err: ""}
+		}
+		return &RequestError{StatusCode: resp.StatusCode, Err: errorBody.Message}
+	}
+	if resp.StatusCode != http.StatusOK {
+		statusText := http.StatusText(resp.StatusCode)
+		return &RequestError{StatusCode: resp.StatusCode, Err: statusText}
+	}
+
+	return nil
 }
