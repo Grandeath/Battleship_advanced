@@ -37,8 +37,10 @@ mainloop:
 			case <-ctx.Done():
 				break mainloop
 			default:
-				t.Time--
-				t.setClock()
+				if t.Time > 0 {
+					t.Time--
+					t.setClock()
+				}
 			}
 		} else {
 			select {
