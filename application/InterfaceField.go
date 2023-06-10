@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	gui "github.com/grupawp/warships-gui/v2"
@@ -122,4 +123,22 @@ func (s *ShipLeftCountField) UpdateTwoMastCount() {
 func (s *ShipLeftCountField) UpdateOneMastCount() {
 	countText := fmt.Sprintf("One mast ship left: %d", s.OneMastCount)
 	s.OneMastField.SetText(countText)
+}
+
+type Accuracy struct {
+	accuracyField *gui.Text
+	ShotNumber    uint16
+	HitNumber     uint16
+}
+
+func NewAccuracyField() Accuracy {
+	accuracyField := gui.NewText(100, 10, "Accuracy: 0 Number of shots: 0 hit: 0", nil)
+	return Accuracy{accuracyField: accuracyField}
+}
+
+func (a *Accuracy) updateField() {
+	percentAccuracy := (float64(a.HitNumber) / float64(a.ShotNumber))
+	percentAccuracy = math.Round(percentAccuracy*100) / 100.0
+	countText := fmt.Sprintf("Accuracy: %.2f Number of shots: %d hit: %d", percentAccuracy, a.ShotNumber, a.HitNumber)
+	a.accuracyField.SetText(countText)
 }

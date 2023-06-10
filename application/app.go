@@ -40,6 +40,7 @@ type GuiBoard struct {
 	fireLogText        *gui.Text
 	legendField        LegendField
 	shipLeftCountField ShipLeftCountField
+	accuracyField      Accuracy
 	enemyCurrentShot   int
 }
 
@@ -85,6 +86,7 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.descText = NewDescriptionFieldYour(g.Description.Desc)
 	g.oppDescText = NewDescriptionFieldEnemy(g.Description.OppDesc)
 	g.fireLogText = gui.NewText(1, 35, "Press on any coordinate to log it.", nil)
+	g.accuracyField = NewAccuracyField()
 
 	g.legendField = NewLegendField()
 
@@ -106,6 +108,7 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.ui.Draw(g.shipLeftCountField.ThreeMastField)
 	g.ui.Draw(g.shipLeftCountField.TwoMastField)
 	g.ui.Draw(g.shipLeftCountField.OneMastField)
+	g.ui.Draw(g.accuracyField.accuracyField)
 	return nil
 }
 
@@ -140,9 +143,11 @@ func (g *GuiBoard) FireToBoard(coord string, resp connection.FireResponse) error
 		return err
 	}
 
+	g.accuracyField.ShotNumber++
 	switch resp.Result {
 	case "hit":
 		g.enemyBoardState[column][row-1] = gui.Hit
+		g.accuracyField.HitNumber++
 	case "miss":
 		g.enemyBoardState[column][row-1] = gui.Miss
 		g.SetTurnText("Enemy turn")
@@ -150,9 +155,11 @@ func (g *GuiBoard) FireToBoard(coord string, resp connection.FireResponse) error
 		g.ui.Log("Sunk the ship")
 		g.enemyBoardState[column][row-1] = gui.Hit
 		g.sunkShip(coord)
+		g.accuracyField.HitNumber++
 	}
 
 	g.ui.Log("Shot at coordinates: %s did %s the target", coord, resp.Result)
+	g.accuracyField.updateField()
 	g.enemyBoard.SetStates(g.enemyBoardState)
 	return nil
 }

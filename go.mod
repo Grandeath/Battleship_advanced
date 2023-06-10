@@ -3,8 +3,8 @@ module github.com/Grandeath/Battleship_advanced
 go 1.20
 
 require (
-	github.com/grupawp/termloop v0.0.0-20230516071741-9af5ae3e8663
-	github.com/grupawp/warships-gui/v2 v2.1.4
+	github.com/grupawp/termloop v0.0.0-20230531144437-277a1cbf4c14
+	github.com/grupawp/warships-gui/v2 v2.1.5
 	github.com/mitchellh/go-wordwrap v1.0.1
 )
 
