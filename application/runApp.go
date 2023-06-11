@@ -16,8 +16,8 @@ const (
 	host = "https://go-pjatk-server.fly.dev"
 )
 
-// StartApp function is starting a game by asking starting condition
-// creating base on that starting header. Creates board and client struct
+// StartApp function is starting a game by opening the main menu
+// geting starting header from it. Creates board and client struct
 // Pass context to child functions and start RunApp function
 func StartApp(ctx context.Context) {
 	client := connection.NewClient(host)
@@ -71,6 +71,7 @@ func RunApp(ctx context.Context, board boardGUI, client connection.Client) {
 	// Start StartBoard in goroutine to make a board updatable
 	go board.StartBoard(ctx, quit)
 
+	// Start turn timer
 	board.StartTimer(ctx)
 
 	var fireCoord string
@@ -110,8 +111,9 @@ mainloop:
 		}
 		time.Sleep(time.Millisecond * 500)
 
-		// Wait for channel ch to be ready to pass fire coordinates
+		// Pass empty struct to t channel to start listening board
 		t <- struct{}{}
+		// Wait for click on the field and pass value to fireCoord or for quit channel to leave game
 		select {
 		case fireCoord = <-ch:
 		case <-quit:
@@ -160,12 +162,15 @@ func waitFunction(ctx context.Context, client connection.Client) (connection.Gam
 	return gotStatus, nil
 }
 
+// waitForGameStart function which wait for game start when player challenged enemy or bot
 func waitForGameStart(ctx context.Context, client connection.Client) {
+	// Post game to the server
 	err := client.StartGame(ctx)
 	if err != nil {
 		log.Panic(err)
 	}
 
+	// Wait for when game start and get a response from GetStatus that game is ready to play
 	waitForGame := true
 	for waitForGame {
 		status, _ := client.GetStatus(ctx)
@@ -176,14 +181,16 @@ func waitForGameStart(ctx context.Context, client connection.Client) {
 	}
 }
 
+// waitForChallenge post that player wait for challenge on server and refresh it every ten seconds
 func waitForChallenge(ctx context.Context, client connection.Client) {
+	// Post wait to the server
 	err := client.StartGame(ctx)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	var counter int
-
+	// wait for challenge loop
 	waitForGame := true
 	for waitForGame {
 		status, _ := client.GetStatus(ctx)

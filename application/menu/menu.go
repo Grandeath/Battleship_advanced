@@ -1,3 +1,4 @@
+// menu create main menu of the game
 package menu
 
 import (
@@ -14,14 +15,19 @@ import (
 	"github.com/Grandeath/Battleship_advanced/connection"
 )
 
+// UserIntent represents the user's intention from the main menu
 type UserIntent uint8
 
 const (
+	// WaitForChallenge indicates the user wants to wait for a challenge
 	WaitForChallenge UserIntent = iota
+	// ExitTheGame indicates the user wants to exit the game
 	ExitTheGame
+	// StartGame indicates the user wants to start a game
 	StartGame
 )
 
+// MainMenu displays the main menu and handles user input
 func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 	var startingHeader connection.StartingHeader
 
@@ -40,6 +46,7 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 		var question string
 		var chosenMenu int
 
+		// Read user input until a valid menu option is chosen
 		for {
 			if scanner.Scan() {
 				question = scanner.Text()
@@ -56,6 +63,7 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 				break
 			}
 		}
+		// Handle the chosen menu option
 		switch chosenMenu {
 		case 1:
 			err := choseNick(scanner, &startingHeader)
@@ -98,12 +106,14 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 	}
 }
 
+// choseNick prompts the user to choose a nick and description
 func choseNick(scanner *bufio.Scanner, startingHeader *connection.StartingHeader) error {
 	fmt.Println("Write your Nick")
 
 	var yourDescription string
 	var yourNick string
 
+	// Read user input for nick until valid length is entered
 	for {
 		if scanner.Scan() {
 			yourNick = scanner.Text()
@@ -121,7 +131,7 @@ func choseNick(scanner *bufio.Scanner, startingHeader *connection.StartingHeader
 			break
 		}
 	}
-
+	// Read user input for description until valid length is entered
 	for {
 		fmt.Println("Write your Desc")
 
@@ -144,6 +154,7 @@ func choseNick(scanner *bufio.Scanner, startingHeader *connection.StartingHeader
 	return nil
 }
 
+// choosePlayer prompts the user to choose a player to challenge
 func choosePlayer(ctx context.Context, client connection.Client, scanner *bufio.Scanner, startingHeader *connection.StartingHeader) error {
 	playerList, err := client.GetPlayerList(ctx)
 	if err != nil {
@@ -180,15 +191,18 @@ func choosePlayer(ctx context.Context, client connection.Client, scanner *bufio.
 	return nil
 }
 
+// playAgainstBot sets the game mode to play against a bot
 func playAgainstBot(startingHeader *connection.StartingHeader) {
 	startingHeader.Wpbot = true
 }
 
+// waitForChallenge sets the game mode to wait for a challenge
 func waitForChallenge(startingHeader *connection.StartingHeader) {
 	startingHeader.Wpbot = false
 	startingHeader.TargetNick = ""
 }
 
+// ShowLeaderboard displays the leaderboard with player statistics
 func ShowLeaderBoard(ctx context.Context, client connection.Client, scanner *bufio.Scanner, startingHeader connection.StartingHeader) error {
 	statsList, err := client.GetLeaderBoard(ctx)
 	if err != nil {
@@ -232,6 +246,7 @@ func ShowLeaderBoard(ctx context.Context, client connection.Client, scanner *buf
 	return nil
 }
 
+// PrintManual print game manual
 func PrintManual(scanner *bufio.Scanner) error {
 	fmt.Println("How to play")
 	fmt.Println("1. Choose a nick to save your progress write Your nick in option 1 of menu otherwise You will get random nick.")

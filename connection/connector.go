@@ -342,6 +342,7 @@ func (c ConnectionClient) GetPlayerList(ctx context.Context) (PlayerList, error)
 	return playerList, nil
 }
 
+// DeleteGame - deleting the game from the server
 func (c ConnectionClient) DeleteGame(ctx context.Context) error {
 	// Create a new context with a timeout of 5 seconds
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
@@ -384,6 +385,7 @@ func (c ConnectionClient) DeleteGame(ctx context.Context) error {
 	return nil
 }
 
+// GetLeaderBoard - return StatsLeaderboard a statistic of top 10 players
 func (c ConnectionClient) GetLeaderBoard(ctx context.Context) (StatsLeaderboard, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
 	defer cancel()
@@ -429,6 +431,8 @@ func (c ConnectionClient) GetLeaderBoard(ctx context.Context) (StatsLeaderboard,
 
 }
 
+// GerPlayerScore - takes context which hold timeout of the api request and player nick
+// and return statistic of given player
 func (c ConnectionClient) GetPlayerScore(ctx context.Context, player string) (StatsPlayer, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))
 	defer cancel()
@@ -474,6 +478,7 @@ func (c ConnectionClient) GetPlayerScore(ctx context.Context, player string) (St
 
 }
 
+// RefreshWaitingForGame while waiting for game refresh to not get kicked out of the lobby
 func (c ConnectionClient) RefreshWaitingForGame(ctx context.Context) error {
 	// Create a new context with a timeout of 5 seconds
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*5))

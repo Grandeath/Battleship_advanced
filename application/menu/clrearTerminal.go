@@ -1,3 +1,4 @@
+// menu create main menu of the game
 package menu
 
 import (

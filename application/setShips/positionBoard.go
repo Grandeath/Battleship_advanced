@@ -1,4 +1,5 @@
-package setships
+// setShips handle a logic to position ships by the player
+package setShips
 
 import (
 	"context"
@@ -10,6 +11,7 @@ import (
 	gui "github.com/grupawp/warships-gui/v2"
 )
 
+// SetShipBoard represents the board for ship placement
 type SetShipBoard struct {
 	ui                *gui.GUI
 	setBoard          *gui.Board
@@ -21,10 +23,12 @@ type SetShipBoard struct {
 	placementBucket   []ship.ShipCoord
 }
 
+// NewSetShipBoard creates a new SetShipBoard instance
 func NewSetShipBoard() SetShipBoard {
 	return SetShipBoard{ui: gui.NewGUI(true), config: gui.NewBoardConfig()}
 }
 
+// CreateBoard initializes the ship placement board
 func (s *SetShipBoard) CreateBoard() {
 	s.setBoard = gui.NewBoard(1, 1, nil)
 
@@ -42,6 +46,7 @@ func (s *SetShipBoard) CreateBoard() {
 	s.ui.Draw(s.shipToPosition.currentShipFIeld)
 }
 
+// BoardListener listens for input events on the ship placement board
 func (s *SetShipBoard) BoardListener(ctx context.Context, ch chan<- string, t <-chan struct{}) {
 	for {
 		<-t
@@ -54,12 +59,14 @@ func (s *SetShipBoard) BoardListener(ctx context.Context, ch chan<- string, t <-
 	}
 }
 
+// StartBoard starts the ship placement board and listens for user quit input
 func (s *SetShipBoard) StartBoard(ctx context.Context, quit chan struct{}) {
 	quitKey := tl.Key(tl.KeyCtrlF)
 	s.ui.Start(ctx, &quitKey)
 	quit <- struct{}{}
 }
 
+// PlaceShipPart places a ship part at the given coordinate
 func (s *SetShipBoard) PlaceShipPart(coord string) error {
 	column := int(coord[0]) - 65
 	row, err := strconv.Atoi(coord[1:])
@@ -83,6 +90,8 @@ func (s *SetShipBoard) PlaceShipPart(coord string) error {
 	return nil
 }
 
+// CheckIfCorrectPosition checks if the ship placement is correct
+// and highlight fields prohibited to place next ship
 func (s *SetShipBoard) CheckIfCorrectPosition(row int, column int) {
 	newNode := ship.NewQuadTree(ship.ShipCoord{Row: row - 1, Column: column}, s.setBoardState, ship.Center, gui.Ship)
 
@@ -104,11 +113,13 @@ func (s *SetShipBoard) CheckIfCorrectPosition(row int, column int) {
 
 }
 
-func transfromCoord(row int, coord int) string {
-	columnLetter := rune(coord + 65)
+// transformCoord transfrom row and column input to string e.g (0,0) to (A1)
+func transfromCoord(row int, column int) string {
+	columnLetter := rune(column + 65)
 	return fmt.Sprintf("%c%d", columnLetter, row+1)
 }
 
+// Same as with the file app.go but with change to ships instead of hits
 func (s *SetShipBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 	heading := ship.North
 	column := gotColumn - 1

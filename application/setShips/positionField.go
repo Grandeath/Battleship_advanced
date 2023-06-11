@@ -1,18 +1,22 @@
-package setships
+// setShips handle a logic to position ships by the player
+package setShips
 
 import gui "github.com/grupawp/warships-gui/v2"
 
+// PositionField contain information which ship should be now placed and change the field text to be appropriate.
 type PositionField struct {
 	currentShipFIeld *gui.Text
 	shipCount        int
 	currentMastCount int
 }
 
+// NewPositionField create PositionField with start of four mast ship
 func NewPositionField() PositionField {
 	currentShipField := gui.NewText(50, 6, "Position 1 four mast ship", nil)
 	return PositionField{currentShipFIeld: currentShipField, currentMastCount: 4, shipCount: 0}
 }
 
+// NextShip change a placement of the ship to the next in the que
 func (p *PositionField) NextShip() {
 	p.shipCount++
 	switch p.shipCount {

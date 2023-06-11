@@ -87,7 +87,7 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.turnText = gui.NewText(1, 1, "Enemy turn", nil)
 	versus := fmt.Sprintf("%s vs %s", g.Description.Nick, g.Description.Opponent)
 	g.versusText = gui.NewText(1, 4, versus, nil)
-	g.descText = NewDescriptionFieldYour(g.Description.Desc)
+	g.descText = NewDescriptionFieldYours(g.Description.Desc)
 	g.oppDescText = NewDescriptionFieldEnemy(g.Description.OppDesc)
 	g.fireLogText = gui.NewText(1, 35, "Press on any coordinate to log it.", nil)
 	g.accuracyField = NewAccuracyField()
@@ -216,52 +216,70 @@ func (g *GuiBoard) SetTurnText(text string) {
 	g.turnText.SetText(text)
 }
 
+// sunkShip when shot sunk a ship this function taking coordinates of last shot and update ShipCountField
+// and highlight empty tiles with HighlighEmptyTiles function around ship
 func (g *GuiBoard) sunkShip(coord string) error {
+	// convert string coordinates to number of row and column
 	column := int(coord[0]) - 65
 	row, err := strconv.Atoi(coord[1:])
 	if err != nil {
 		return err
 	}
+
+	// create ship tree which store all coordinates of this ship
 	newNode := ship.NewQuadTree(ship.ShipCoord{Row: row - 1, Column: column}, g.enemyBoardState, ship.Center, gui.Hit)
+
+	// update ship count with lenghth of the ship
 	g.UpdateShipCountField(len(newNode.GetAllCoords()))
 	//check proximity
 	g.ui.Log("Destroyed %d mast ship", len(newNode.GetAllCoords()))
+
+	// sate tiles around the sunken ship to miss
 	g.HighlighEmptyTiles(row, column)
 	return nil
 }
 
+// UpdateShipCountField update shipLeftCountField on the mast count number of sunken ship
 func (g *GuiBoard) UpdateShipCountField(shipMastCount int) {
 	switch shipMastCount {
 	case 4:
 		g.shipLeftCountField.FourMastCount = g.shipLeftCountField.FourMastCount - 1
-		g.shipLeftCountField.UpdateFourMastCount()
+		g.shipLeftCountField.UpdateFourMastField()
 	case 3:
 		g.shipLeftCountField.ThreeMastCount = g.shipLeftCountField.ThreeMastCount - 1
-		g.shipLeftCountField.UpdateThreeMastCount()
+		g.shipLeftCountField.UpdateThreeMastField()
 	case 2:
 		g.shipLeftCountField.TwoMastCount = g.shipLeftCountField.TwoMastCount - 1
-		g.shipLeftCountField.UpdateTwoMastCount()
+		g.shipLeftCountField.UpdateTwoMastField()
 	case 1:
 		g.shipLeftCountField.OneMastCount = g.shipLeftCountField.OneMastCount - 1
-		g.shipLeftCountField.UpdateOneMastCount()
+		g.shipLeftCountField.UpdateOneMastField()
 	}
 }
 
+// StartTimer starting timerField which listen how much time left player have to decide on shot
 func (g *GuiBoard) StartTimer(ctx context.Context) {
 	g.timerField.StartClock(ctx)
 }
 
+// UpdateTimer take time and set counter to this number
 func (g *GuiBoard) UpdateTImer(time int) {
 	g.timerField.TimeGoes = true
 	g.timerField.Time = time
 }
 
+// HighlighEmptyTiles algorithm which set fields around the ship to miss and takes row and column coordinates of last shot.
+// Script move clocwise.
 func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
+	// if still circling around the ship
 	stillCircling := true
+
+	// moving direction of the scrip. In this case algorithm start at heading north
 	heading := ship.North
 	column := gotColumn - 1
 	row := gotRow - 1
 
+	// moving starting column at first empty left tile to the last shot
 	for {
 		if column < 0 {
 			break
@@ -273,17 +291,27 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 		}
 	}
 
+	// Set stopping coordinates
 	stopColumn := column
 	stopRow := row
 
+	// Starting algoritm
 	for stillCircling {
+		// check if moving direction is to North
 		if heading == ship.North {
+			// check if row is in the range of enemyBoardState slice. If not change a heading to East
+			// when movinb North You will always change a row number so if row is out of bounds that mean script need to change direction
+			// I decided that move is clocwise
 			if row < 10 && row >= 0 {
+				// Check if on the right site is ship
 				if g.enemyBoardState[column+1][row] == gui.Hit {
+					// check if column is out of bound and set the field to miss if script is on the board
 					if column >= 0 {
 						g.enemyBoardState[column][row] = gui.Miss
 					}
+					// check if when moving script forward is still on board
 					if column >= 0 && row-1 >= 0 {
+						// check if ahead is ship. If is change heading to West and rise a column. If not just head north
 						if g.enemyBoardState[column][row-1] == gui.Hit {
 							heading = ship.West
 							column--
@@ -293,7 +321,9 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					} else {
 						row--
 					}
+					// If on the right side there is no ship
 				} else if g.enemyBoardState[column+1][row] != gui.Hit {
+					// set current field to miss if it is not out of bounds and change moving direction to East. This part make a corners to miss and turn to right.
 					if column >= 0 && column < 10 && row >= 0 && row < 10 {
 						g.enemyBoardState[column][row] = gui.Miss
 					}
@@ -305,10 +335,11 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 				column++
 			}
 		}
+		// check if script made full circle
 		if row == stopRow && column == stopColumn {
 			stillCircling = false
 		}
-
+		// rest of the script is as North but with appropriate corrections
 		if heading == ship.East {
 			if column < 10 && column >= 0 {
 				if g.enemyBoardState[column][row+1] == gui.Hit {

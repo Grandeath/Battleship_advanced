@@ -14,6 +14,7 @@ type Description struct {
 // ShoulFire - boolean if this is your turn to fire
 // OppShots - oponnent shots coordinates during their turn
 // LastGameStatus - information about outcome of last game
+// Timer - information about your how long turn will last
 type GameStatus struct {
 	GameStatus     string   `json:"game_status"`
 	ShouldFire     bool     `json:"should_fire"`

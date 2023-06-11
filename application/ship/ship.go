@@ -1,11 +1,14 @@
+// contain algorith which find all ship nodes
 package ship
 
 import (
 	gui "github.com/grupawp/warships-gui/v2"
 )
 
+// currentNode indicator side of current node
 type currentNode uint8
 
+// All possible heading direction: East, North, West, South and center
 const (
 	East   currentNode = iota
 	North  currentNode = iota
@@ -14,11 +17,13 @@ const (
 	Center currentNode = iota
 )
 
+// ShipCoord contain Row and Column of the ship
 type ShipCoord struct {
 	Row    int
 	Column int
 }
 
+// QuadTree contain Coord of current node and pointer to all children
 type QuadTree struct {
 	Coord      ShipCoord
 	NorthChild *QuadTree
@@ -27,6 +32,7 @@ type QuadTree struct {
 	SouthChild *QuadTree
 }
 
+// NewQuadTree take coordinates, boardState, direction of script and searching state and creates pointer to QuadTree with finding all children of the node
 func NewQuadTree(coord ShipCoord, enemyBoardState [10][10]gui.State, current currentNode, searchState gui.State) *QuadTree {
 	newNode := &QuadTree{Coord: coord}
 	enemyBoardState[coord.Column][coord.Row] = gui.Empty
@@ -34,11 +40,15 @@ func NewQuadTree(coord ShipCoord, enemyBoardState [10][10]gui.State, current cur
 	return newNode
 }
 
+// FindNode find all the children of the node
 func (q *QuadTree) FindNode(enemyBoardState *[10][10]gui.State, current currentNode, searchState gui.State) {
-
+	// check if heading North is correct and if previous node is not in the South
 	if q.Coord.Row+1 < 10 && current != South {
+		// Check check if North node is searched state
 		if enemyBoardState[q.Coord.Column][q.Coord.Row+1] == searchState {
+			// Delete this node to search again
 			enemyBoardState[q.Coord.Column][q.Coord.Row+1] = gui.Empty
+			// Create new node
 			q.NorthChild = NewQuadTree(ShipCoord{Column: q.Coord.Column, Row: q.Coord.Row + 1}, *enemyBoardState, North, searchState)
 		}
 	}
@@ -63,11 +73,13 @@ func (q *QuadTree) FindNode(enemyBoardState *[10][10]gui.State, current currentN
 
 }
 
+// GetAllCoords make a slice of all unique coordinates
 func (q *QuadTree) GetAllCoords() []ShipCoord {
 	visited := make(map[ShipCoord]bool)
 	return q.getAllCoordsUnique(visited)
 }
 
+// getAllCoordsUnique search for all unique coordinates
 func (q *QuadTree) getAllCoordsUnique(visited map[ShipCoord]bool) []ShipCoord {
 	var coords []ShipCoord
 

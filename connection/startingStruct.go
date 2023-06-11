@@ -6,6 +6,7 @@ package connection
 // Nick - if specified send your Nick to a server if not server will assign it automatically for you
 // TargetNick - if specified attack chosen player
 // Wpbot - if true you chose to fighr WPbot
+// Coords - contain positions of the ships position by the player
 type StartingHeader struct {
 	Desc       string   `json:"desc"`
 	Nick       string   `json:"nick"`
