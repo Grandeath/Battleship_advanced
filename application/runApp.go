@@ -194,7 +194,7 @@ func waitForChallenge(ctx context.Context, client connection.Client) {
 		if counter == 10 {
 			err = client.RefreshWaitingForGame(ctx)
 			if err != nil {
-				log.Panic(err)
+				log.Println(err)
 			}
 			counter = 0
 		}

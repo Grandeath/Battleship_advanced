@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	setships "github.com/Grandeath/Battleship_advanced/application/setShips"
 	"github.com/Grandeath/Battleship_advanced/connection"
 )
 
@@ -31,7 +32,8 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 		fmt.Println("4. Play against bot")
 		fmt.Println("5. Play against chosen player")
 		fmt.Println("6. Wait for challenge")
-		fmt.Println("7. Exit game")
+		fmt.Println("7. Game manual")
+		fmt.Println("8. Exit game")
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Println("Chose a number")
 
@@ -48,7 +50,7 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 			chosenMenu, err = strconv.Atoi(question)
 			if err != nil {
 				log.Println(err)
-			} else if chosenMenu < 0 || chosenMenu > 7 {
+			} else if chosenMenu < 0 || chosenMenu > 8 {
 				log.Println("Wrong number")
 			} else {
 				break
@@ -61,6 +63,7 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 				log.Println("Not a number")
 			}
 		case 2:
+			setships.StartPositionBoard(ctx, &startingHeader)
 		case 3:
 			err := ShowLeaderBoard(ctx, client, scanner, startingHeader)
 			if err != nil {
@@ -84,6 +87,11 @@ func MainMenu(ctx context.Context, client connection.Client) UserIntent {
 			client.SetStartingHeader(startingHeader)
 			return WaitForChallenge
 		case 7:
+			err := PrintManual(scanner)
+			if err != nil {
+				log.Println("Not a number")
+			}
+		case 8:
 			return ExitTheGame
 		}
 		CallClear()
@@ -221,5 +229,34 @@ func ShowLeaderBoard(ctx context.Context, client connection.Client, scanner *buf
 		return scanner.Err()
 	}
 
+	return nil
+}
+
+func PrintManual(scanner *bufio.Scanner) error {
+	fmt.Println("How to play")
+	fmt.Println("1. Choose a nick to save your progress write Your nick in option 1 of menu otherwise You will get random nick.")
+	fmt.Println("2. Position ship by yourself - click to position your ships for the next battle")
+	fmt.Println("3. Show ladderboard- showing leaderboard of best players. If you specify your nick you can see your results")
+	fmt.Println("4. Play against bot - challenge a bot")
+	fmt.Println("5. Play against chosen player - challenge a player")
+	fmt.Println("6. Wait for challenge - wait for someone to challengu you")
+	fmt.Println("7. Game manual - see manual")
+	fmt.Println("8. Exit game - quit the game")
+	fmt.Println()
+	fmt.Println()
+	fmt.Println("How to play")
+	fmt.Println("To play this game you need to click on the oppenent board to make a shot")
+	fmt.Println("When you hit correctly board will show H symbol and let you shot again")
+	fmt.Println("You have 60 sec time limit to make a shot otherwise you will lose")
+	fmt.Println("This game will be won by person who first will shot all enemy ships")
+	fmt.Println()
+	fmt.Println()
+
+	fmt.Println("Press anything to return to menu")
+	if scanner.Scan() {
+		scanner.Text()
+	} else {
+		return scanner.Err()
+	}
 	return nil
 }

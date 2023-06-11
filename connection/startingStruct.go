@@ -7,10 +7,11 @@ package connection
 // TargetNick - if specified attack chosen player
 // Wpbot - if true you chose to fighr WPbot
 type StartingHeader struct {
-	Desc       string `json:"desc"`
-	Nick       string `json:"nick"`
-	TargetNick string `json:"target_nick"`
-	Wpbot      bool   `json:"wpBot"`
+	Desc       string   `json:"desc"`
+	Nick       string   `json:"nick"`
+	TargetNick string   `json:"target_nick"`
+	Wpbot      bool     `json:"wpBot"`
+	Coords     []string `json:"coords"`
 }
 
 // PlayerList decode information got from GetPlayerList

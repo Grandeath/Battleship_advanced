@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Grandeath/Battleship_advanced/application/ship"
 	"github.com/Grandeath/Battleship_advanced/application/timer"
 	"github.com/Grandeath/Battleship_advanced/connection"
 	tl "github.com/grupawp/termloop"
@@ -41,6 +42,7 @@ type GuiBoard struct {
 	fireLogText        *gui.Text
 	legendField        LegendField
 	shipLeftCountField ShipLeftCountField
+	quitField          *gui.Text
 	accuracyField      Accuracy
 	timerField         timer.Timer
 	enemyCurrentShot   int
@@ -90,6 +92,7 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.fireLogText = gui.NewText(1, 35, "Press on any coordinate to log it.", nil)
 	g.accuracyField = NewAccuracyField()
 	g.timerField = timer.NewTimer()
+	g.quitField = gui.NewText(30, 1, "To quit the game press ctrl+f", nil)
 
 	g.legendField = NewLegendField()
 
@@ -113,6 +116,7 @@ func (g *GuiBoard) PrintDescription(ctx context.Context) error {
 	g.ui.Draw(g.shipLeftCountField.OneMastField)
 	g.ui.Draw(g.accuracyField.accuracyField)
 	g.ui.Draw(g.timerField.ClockField)
+	g.ui.Draw(g.quitField)
 	return nil
 }
 
@@ -218,7 +222,7 @@ func (g *GuiBoard) sunkShip(coord string) error {
 	if err != nil {
 		return err
 	}
-	newNode := NewQuadTree(ShipCoord{row: row - 1, column: column}, g.enemyBoardState, Center)
+	newNode := ship.NewQuadTree(ship.ShipCoord{Row: row - 1, Column: column}, g.enemyBoardState, ship.Center, gui.Hit)
 	g.UpdateShipCountField(len(newNode.GetAllCoords()))
 	//check proximity
 	g.ui.Log("Destroyed %d mast ship", len(newNode.GetAllCoords()))
@@ -254,7 +258,7 @@ func (g *GuiBoard) UpdateTImer(time int) {
 
 func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 	stillCircling := true
-	heading := North
+	heading := ship.North
 	column := gotColumn - 1
 	row := gotRow - 1
 
@@ -273,7 +277,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 	stopRow := row
 
 	for stillCircling {
-		if heading == North {
+		if heading == ship.North {
 			if row < 10 && row >= 0 {
 				if g.enemyBoardState[column+1][row] == gui.Hit {
 					if column >= 0 {
@@ -281,7 +285,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					}
 					if column >= 0 && row-1 >= 0 {
 						if g.enemyBoardState[column][row-1] == gui.Hit {
-							heading = West
+							heading = ship.West
 							column--
 						} else {
 							row--
@@ -293,11 +297,11 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					if column >= 0 && column < 10 && row >= 0 && row < 10 {
 						g.enemyBoardState[column][row] = gui.Miss
 					}
-					heading = East
+					heading = ship.East
 					column++
 				}
 			} else {
-				heading = East
+				heading = ship.East
 				column++
 			}
 		}
@@ -305,7 +309,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 			stillCircling = false
 		}
 
-		if heading == East {
+		if heading == ship.East {
 			if column < 10 && column >= 0 {
 				if g.enemyBoardState[column][row+1] == gui.Hit {
 					if row >= 0 {
@@ -313,7 +317,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					}
 					if row >= 0 && column+1 < 10 {
 						if g.enemyBoardState[column+1][row] == gui.Hit {
-							heading = North
+							heading = ship.North
 							row--
 						} else {
 							column++
@@ -325,18 +329,18 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					if column >= 0 && column < 10 && row >= 0 && row < 10 {
 						g.enemyBoardState[column][row] = gui.Miss
 					}
-					heading = South
+					heading = ship.South
 					row++
 				}
 			} else {
-				heading = South
+				heading = ship.South
 				row++
 			}
 		}
 		if row == stopRow && column == stopColumn {
 			stillCircling = false
 		}
-		if heading == South {
+		if heading == ship.South {
 			if row < 10 && row >= 0 {
 				if g.enemyBoardState[column-1][row] == gui.Hit {
 					if column < 10 {
@@ -344,7 +348,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					}
 					if column < 10 && row+1 < 10 {
 						if g.enemyBoardState[column][row+1] == gui.Hit {
-							heading = East
+							heading = ship.East
 							column++
 						} else {
 							row++
@@ -356,18 +360,18 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					if column >= 0 && column < 10 && row >= 0 && row < 10 {
 						g.enemyBoardState[column][row] = gui.Miss
 					}
-					heading = West
+					heading = ship.West
 					column--
 				}
 			} else {
-				heading = West
+				heading = ship.West
 				column--
 			}
 		}
 		if row == stopRow && column == stopColumn {
 			stillCircling = false
 		}
-		if heading == West {
+		if heading == ship.West {
 			if column < 10 && column >= 0 {
 				if g.enemyBoardState[column][row-1] == gui.Hit {
 					if row < 10 {
@@ -375,7 +379,7 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					}
 					if row < 10 && column-1 >= 0 {
 						if g.enemyBoardState[column-1][row] == gui.Hit {
-							heading = South
+							heading = ship.South
 							row++
 						} else {
 							column--
@@ -387,11 +391,11 @@ func (g *GuiBoard) HighlighEmptyTiles(gotRow int, gotColumn int) {
 					if column >= 0 && column < 10 && row >= 0 && row < 10 {
 						g.enemyBoardState[column][row] = gui.Miss
 					}
-					heading = North
+					heading = ship.North
 					row--
 				}
 			} else {
-				heading = North
+				heading = ship.North
 				row--
 			}
 		}
