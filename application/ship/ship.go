@@ -1,4 +1,4 @@
-// contain algorith which find all ship nodes
+// contain algoritm which find all ship nodes
 package ship
 
 import (
@@ -8,7 +8,7 @@ import (
 // currentNode indicator side of current node
 type currentNode uint8
 
-// All possible heading direction: East, North, West, South and center
+// All possible heading direction: East, North, West, South and Center
 const (
 	East   currentNode = iota
 	North  currentNode = iota
