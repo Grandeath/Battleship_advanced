@@ -3,7 +3,7 @@
 // In application pacakage there is a logic, GUI and Ship positioning of the application.
 // Whole game is the classic battleship game played with other users or bots on the server.
 // Server receive information like playrs nick, shots, ship positioning, person to challenge
-// and give responses like shot result, enemy shots, leaderboard and results of the gane.
+// and give responses like shot result, enemy shots, leaderboard and results of the game.
 package main
 
 import (
