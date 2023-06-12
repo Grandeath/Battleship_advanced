@@ -1,4 +1,3 @@
-// application implements logic of the game
 package application
 
 import (

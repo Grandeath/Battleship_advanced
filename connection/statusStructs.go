@@ -1,4 +1,3 @@
-// connection package handle connection to rest-api server Warships Online API
 package connection
 
 // Description store information from GetDescription function about your and enemy login and description

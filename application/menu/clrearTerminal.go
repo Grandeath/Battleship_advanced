@@ -1,4 +1,3 @@
-// menu create main menu of the game
 package menu
 
 import (
@@ -23,6 +22,7 @@ func init() {
 	}
 }
 
+// CallClear clear terminal
 func CallClear() {
 
 	value, ok := clear[runtime.GOOS] //runtime.GOOS -> linux, windows, darwin etc.

@@ -1,4 +1,3 @@
-// connection package handle connection to rest-api server Warships Online API
 package connection
 
 // StartingHeader header for StartGame function which store information about game you want to begin

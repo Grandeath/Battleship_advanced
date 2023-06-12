@@ -1,4 +1,3 @@
-// setShips handle a logic to position ships by the player
 package setShips
 
 import (

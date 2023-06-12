@@ -1,4 +1,3 @@
-// connection package handle connection to rest-api server Warships Online API
 package connection
 
 // FireResponse store result of the fire function obout if you hit or missed the shot

@@ -1,4 +1,3 @@
-// connection package handle connection to rest-api server Warships Online API
 package connection
 
 import "fmt"

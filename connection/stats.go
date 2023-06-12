@@ -1,4 +1,3 @@
-// connection package handle connection to rest-api server Warships Online API
 package connection
 
 // StatsLeaderboard caontain Stats of 10 best players
